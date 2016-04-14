@@ -1,46 +1,42 @@
 package com.example.jb.viewnewactivity;
 
 import android.content.Intent;
-import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiManager;
+import android.os.Bundle;
+import android.os.Handler;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.util.Log;
-import android.widget.TextView;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.*;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import android.os.Handler;
-
-import static com.example.jb.viewnewactivity.R.id.editText;
-import static com.example.jb.viewnewactivity.R.id.text;
+import java.net.UnknownHostException;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final int REQUEST_ID = 1;
     public static final String retstrng = "bool not addressed";
     private ServerSocket serverSocket;
+
+    private Socket socket2;
     private static final int SERVERPORT = 1755;
+    private static final int SERVERPORT2 = 1756;
     private static final String SERVER_IP = "192.168.0.102";
-    public ImageButton button_lights;
+
     public boolean visibleButton = true;
+    public ImageButton button_lights;
 
     private EditText textField;
+
     Handler updateConversationHandler;
     Thread serverThread = null;
 
@@ -60,15 +56,13 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        textField = (EditText) findViewById(editText);
+        textField = (EditText) findViewById(R.id.editText);
         ImageButton buttonHeating = (ImageButton) findViewById(R.id.imageButton);
-
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
-        updateConversationHandler = new Handler();
 
+        updateConversationHandler = new Handler();
         this.serverThread = new Thread(new ServerThread());
         this.serverThread.start();
     }
@@ -80,16 +74,34 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 serverSocket = new ServerSocket(SERVERPORT);
+                Log.d("tag", "Serversocket done");
             } catch (IOException e) {e.printStackTrace();}
 
             while (!Thread.currentThread().isInterrupted()) {
 
                 try {
+                    Log.d("tag", "try run ");
                     socket = serverSocket.accept();
+                    Log.d("tag", "try run serversocket accept");
                     CommunicationThread commThread = new CommunicationThread(socket);
                     new Thread(commThread).start();
                 } catch (IOException e) {e.printStackTrace();}
             }
+        }
+    }
+
+    class ClientThread implements Runnable {
+
+        @Override
+        public void run() {
+
+            try {
+                InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+                socket2 = new Socket(serverAddr, SERVERPORT2);
+                Log.d("tag:", InetAddress.getByName(SERVER_IP).toString());
+            }
+            catch (UnknownHostException e) {e.printStackTrace();}
+            catch (IOException e) {e.printStackTrace();}
         }
     }
 
@@ -127,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         public void run() {
-            textField.setText(textField.getText().toString()+"Client(Sony Black YT9114AHHJ)"+ msg + "\n");
+            textField.setText(textField.getText().toString()+"Client(AHHJ)"+ msg + "\n");
         }
     }
 
@@ -156,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
             i.putExtra("visibleButton", visibleButton);
             startActivityForResult(i, REQUEST_ID);
             Log.d("tag", "new activity gestartet");
-            EditText et = (EditText) findViewById(editText);
+            EditText et = (EditText) findViewById(R.id.editText);
             et.setText("d");
 //
 //// Anfrage der Verbindungsdaten zum WLAN
@@ -237,5 +249,19 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+//Client--------------------------------------------------------------------------------------------------------------------
+    public void onClick(View view) {//buttonLights
+
+        try {
+            new Thread(new ClientThread()).start();
+            EditText et = (EditText) findViewById(R.id.editText);
+            String str = et.getText().toString();
+            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),true);
+            out.println(str);
+        }
+        catch (UnknownHostException e) {e.printStackTrace();}
+        catch (IOException e) {e.printStackTrace();}
+        catch (Exception e) {e.printStackTrace();}
     }
 }

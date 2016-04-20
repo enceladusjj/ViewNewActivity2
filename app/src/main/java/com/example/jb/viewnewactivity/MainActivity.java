@@ -1,12 +1,14 @@
 package com.example.jb.viewnewactivity;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -34,8 +36,10 @@ public class MainActivity extends AppCompatActivity {
 
     public boolean visibleButton = true;
     public ImageButton button_lights;
+    public ImageButton button_statCon;
 
-    private EditText textField;
+    private EditText textField_chat;
+    private EditText textField_message;
 
     Handler updateConversationHandler;
     Thread serverThread = null;
@@ -56,8 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        textField = (EditText) findViewById(R.id.editText);
-        ImageButton buttonHeating = (ImageButton) findViewById(R.id.imageButton);
+        textField_chat = (EditText) findViewById(R.id.chat);
+        Button buttonSend = (Button) findViewById(R.id.button_send);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
@@ -82,7 +86,10 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     Log.d("tag", "try run ");
                     socket = serverSocket.accept();
+//                    button_statCon = (ImageButton) findViewById(R.id.status_connection);
+//                    button_statCon.setBackgroundColor(Color.RED);
                     Log.d("tag", "try run serversocket accept");
+
                     CommunicationThread commThread = new CommunicationThread(socket);
                     new Thread(commThread).start();
                 } catch (IOException e) {e.printStackTrace();}
@@ -139,22 +146,23 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         public void run() {
-            textField.setText(textField.getText().toString()+"Client(AHHJ)"+ msg + "\n");
+            Log.d("tag","output");
+            textField_chat.setText(textField_chat.getText().toString()+"\nClient:"+ msg + "\n");
         }
     }
 
     public void onButtonClick(View v) {
 
-        if (v.getId() == R.id.buttonFilling) {
+        if (v.getId() == R.id.button_hide) {
 
-            ImageButton buttonLights = (ImageButton) findViewById(R.id.buttonLights);
+            ImageButton buttonfillings = (ImageButton) findViewById(R.id.buttonFilling);
 
-            Log.d("tag", "buttonlights1:" + String.valueOf(buttonLights.getVisibility()));
-            Intent i = new Intent(MainActivity.this, heating.class);
+            Log.d("tag", "buttonlights1:" + String.valueOf(buttonfillings.getVisibility()));
+            Intent i = new Intent(MainActivity.this, fillings.class);
             boolean testf = false;
             boolean testt = true;
 
-            if(buttonLights.getVisibility()==View.VISIBLE){
+            if(buttonfillings.getVisibility()==View.VISIBLE){
 
                 visibleButton=true;
 
@@ -168,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
             i.putExtra("visibleButton", visibleButton);
             startActivityForResult(i, REQUEST_ID);
             Log.d("tag", "new activity gestartet");
-            EditText et = (EditText) findViewById(R.id.editText);
+            EditText et = (EditText) findViewById(R.id.new_message);
             et.setText("d");
 //
 //// Anfrage der Verbindungsdaten zum WLAN
@@ -230,10 +238,10 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_ID) {
             if (resultCode == RESULT_OK) {
 
-                boolean retValue = data.getBooleanExtra("selected", heating.selected);
+                boolean retValue = data.getBooleanExtra("selected", fillings.selected);
                 Log.d("tag1", Boolean.toString(retValue));
                 CheckBox cbox = (CheckBox) findViewById(R.id.checkBox);
-                button_lights = (ImageButton) findViewById(R.id.buttonLights);
+                button_lights = (ImageButton) findViewById(R.id.buttonFilling);
 
                 Log.d("tag2", Boolean.toString(retValue));
                 if(!retValue) {
@@ -251,14 +259,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 //Client--------------------------------------------------------------------------------------------------------------------
-    public void onClick(View view) {//buttonLights
-
+    public void onClick(View view) {//settings
+    //android:onClick="onButtonClick"
         try {
             new Thread(new ClientThread()).start();
-            EditText et = (EditText) findViewById(R.id.editText);
-            String str = et.getText().toString();
+            textField_message = (EditText) findViewById(R.id.new_message);
+            String strMessage = textField_message.getText().toString();
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),true);
-            out.println(str);
+            textField_chat.setText("Server: " + textField_chat.getText() + strMessage +"\n");
+            out.println(strMessage);
         }
         catch (UnknownHostException e) {e.printStackTrace();}
         catch (IOException e) {e.printStackTrace();}
